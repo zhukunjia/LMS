@@ -32,4 +32,8 @@ public class TokenApplication {
         return StringUtils.equals(cacheToken, token);
     }
 
+    public void removeToken(String userId) {
+        tokenCache.invalidate(userId);
+    }
+
 }

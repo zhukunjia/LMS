@@ -1,0 +1,74 @@
+package org.lms.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.lms.app.LibraryApplication;
+import org.lms.dto.library.AddLibraryCmd;
+import org.lms.dto.library.LibraryQuery;
+import org.lms.dto.library.UpdateLibraryCmd;
+import org.lms.entity.LibraryEntity;
+import org.lms.util.ServiceData;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+
+@RestController
+@RequestMapping("/v1/library")
+@Tag(name = "图书管理接口", description = "提供图书管理的CRUD 接口")
+public class LibraryController {
+
+    @Autowired
+    LibraryApplication libraryApplication;
+
+    @PostMapping("/add")
+    @Operation(summary = "新增图书")
+    public ServiceData<String> addLibrary(@RequestBody @Valid AddLibraryCmd cmd) {
+        String libraryId = libraryApplication.addLibrary(cmd);
+
+        return ServiceData.success(libraryId);
+    }
+
+    @PostMapping("/update")
+    @Operation(summary = "更新图书")
+    public ServiceData<Boolean> updateLibrary(@RequestBody @Valid UpdateLibraryCmd updateLibraryCmd) {
+        boolean updated = libraryApplication.updateLibrary(updateLibraryCmd);
+
+        return ServiceData.success(updated);
+    }
+
+    @DeleteMapping("/{libraryId}")
+    @Operation(summary = "根据ID 删除图书")
+    public ServiceData<Boolean> removeLibrary(@PathVariable("libraryId") String libraryId) {
+        boolean removed = libraryApplication.removeLibrary(libraryId);
+
+        return ServiceData.success(removed);
+    }
+
+    @DeleteMapping("/batchRemove")
+    @Operation(summary = "根据ID 列表批量删除图书")
+    public ServiceData<Boolean> batchRemoveLibrary(@RequestBody List<String> libraryIds) {
+        boolean removed = libraryApplication.batchRemoveLibrary(libraryIds);
+
+        return ServiceData.success(removed);
+    }
+
+    @GetMapping("/{libraryId}")
+    @Operation(summary = "查询图书详情")
+    public ServiceData<LibraryEntity> getLibraryDetail(@PathVariable("libraryId") String libraryId) {
+        LibraryEntity entity = libraryApplication.getLibraryDetail(libraryId);
+
+        return ServiceData.success(entity);
+    }
+
+    @PostMapping("/pageQuery")
+    @Operation(summary = "分页查询图书")
+    public ServiceData<IPage<LibraryEntity>> pageQueryLibrary(@RequestBody LibraryQuery query) {
+        IPage<LibraryEntity> page = libraryApplication.pageQuery(query);
+
+        return ServiceData.success(page);
+    }
+
+}

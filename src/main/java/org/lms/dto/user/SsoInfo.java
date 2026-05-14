@@ -1,4 +1,4 @@
-package org.lms.dto;
+package org.lms.dto.user;
 
 import lombok.Data;
 

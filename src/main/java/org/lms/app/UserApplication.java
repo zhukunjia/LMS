@@ -1,21 +1,19 @@
 package org.lms.app;
 
-import cn.hutool.core.lang.Snowflake;
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.lms.dto.AddUserCmd;
-import org.lms.dto.LoginDTO;
-import org.lms.dto.SsoInfo;
+import org.lms.dto.user.AddUserCmd;
+import org.lms.dto.user.LoginDTO;
+import org.lms.dto.user.SsoInfo;
 import org.lms.entity.UserEntity;
 import org.lms.exception.LmsException;
 import org.lms.service.UserService;
+import org.lms.util.IdGenUtil;
+import org.lms.util.RequestContextHolder;
 import org.lms.util.RetCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,24 +31,9 @@ public class UserApplication {
     private TokenApplication tokenApplication;
 
     public String addUser(AddUserCmd addUserCmd) {
-        // 校验必填
-        if (StringUtils.isEmpty(addUserCmd.getUserName())) {
-            log.info("Add user failed, because the userName is empty");
-
-            throw new LmsException(RetCode.PARAM_ERROR.getCode(), "userName is empty");
-        }
-        if (StringUtils.isEmpty(addUserCmd.getPassword())) {
-            log.info("Add user failed, because the password is empty");
-
-            throw new LmsException(RetCode.PARAM_ERROR.getCode(), "password is empty");
-        }
-
         // TODO 最好校验用户名是否已经存在。虽然sql 是已经限制了唯一索引
 
-        // 使用雪花算法生成ID
-        Snowflake snowflake = IdUtil.getSnowflake(1, 1);
-        String id = String.valueOf(snowflake.nextId());
-
+        String id = IdGenUtil.genUserId();
         // 密码需要加密存储，不可逆加密
         String hashedPassword = BCrypt.hashpw(addUserCmd.getPassword());
 
@@ -120,6 +103,10 @@ public class UserApplication {
             throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "password is wrong");
         }
 
+    }
+
+    public void logout() {
+        tokenApplication.removeToken(RequestContextHolder.getUserId());
     }
 
 }
