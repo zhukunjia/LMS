@@ -79,7 +79,14 @@ public class LibraryApplication {
     }
 
     public LibraryEntity getLibraryDetail(String libraryId) {
-        return libraryService.getById(libraryId);
+        LibraryEntity entity = libraryService.getById(libraryId);
+        if(null == entity) {
+            log.info("The libraryId = {} does not exist.", libraryId);
+            throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "the library does not exist");
+        }
+        // 理论上可以加上缓存，提高接口性能。在修改的时候要同步删除缓存。避免缓存和数据不一致
+
+        return entity;
     }
 
     public IPage<LibraryEntity> pageQuery(LibraryQuery query) {

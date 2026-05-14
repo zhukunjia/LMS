@@ -10,14 +10,10 @@ import java.time.LocalDate;
 public class UpdateLibraryCmd {
     @NotEmpty
     private String id;
-    @NotEmpty
     private String name;
     private String isbn;
-    @NotEmpty
     private String author;
-    @NotEmpty
     private String publisher;
-    @NotEmpty
     private LocalDate publishTime;
     private String categoryName;
 

@@ -3,11 +3,13 @@ package org.lms.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.lms.annotation.Permission;
 import org.lms.app.LibraryApplication;
 import org.lms.dto.library.AddLibraryCmd;
 import org.lms.dto.library.LibraryQuery;
 import org.lms.dto.library.UpdateLibraryCmd;
 import org.lms.entity.LibraryEntity;
+import org.lms.util.Constant;
 import org.lms.util.ServiceData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +27,7 @@ public class LibraryController {
 
     @PostMapping("/add")
     @Operation(summary = "新增图书")
+    @Permission(role = {Constant.MANAGE})
     public ServiceData<String> addLibrary(@RequestBody @Valid AddLibraryCmd cmd) {
         String libraryId = libraryApplication.addLibrary(cmd);
 
@@ -33,6 +36,7 @@ public class LibraryController {
 
     @PostMapping("/update")
     @Operation(summary = "更新图书")
+    @Permission(role = {Constant.MANAGE})
     public ServiceData<Boolean> updateLibrary(@RequestBody @Valid UpdateLibraryCmd updateLibraryCmd) {
         boolean updated = libraryApplication.updateLibrary(updateLibraryCmd);
 
@@ -41,6 +45,7 @@ public class LibraryController {
 
     @DeleteMapping("/{libraryId}")
     @Operation(summary = "根据ID 删除图书")
+    @Permission(role = {Constant.MANAGE})
     public ServiceData<Boolean> removeLibrary(@PathVariable("libraryId") String libraryId) {
         boolean removed = libraryApplication.removeLibrary(libraryId);
 
@@ -49,6 +54,7 @@ public class LibraryController {
 
     @DeleteMapping("/batchRemove")
     @Operation(summary = "根据ID 列表批量删除图书")
+    @Permission(role = {Constant.MANAGE})
     public ServiceData<Boolean> batchRemoveLibrary(@RequestBody List<String> libraryIds) {
         boolean removed = libraryApplication.batchRemoveLibrary(libraryIds);
 
@@ -57,6 +63,7 @@ public class LibraryController {
 
     @GetMapping("/{libraryId}")
     @Operation(summary = "查询图书详情")
+    @Permission(role = {Constant.MANAGE, Constant.USER})
     public ServiceData<LibraryEntity> getLibraryDetail(@PathVariable("libraryId") String libraryId) {
         LibraryEntity entity = libraryApplication.getLibraryDetail(libraryId);
 
@@ -65,6 +72,7 @@ public class LibraryController {
 
     @PostMapping("/pageQuery")
     @Operation(summary = "分页查询图书")
+    @Permission(role = {Constant.MANAGE, Constant.USER})
     public ServiceData<IPage<LibraryEntity>> pageQueryLibrary(@RequestBody LibraryQuery query) {
         IPage<LibraryEntity> page = libraryApplication.pageQuery(query);
 
