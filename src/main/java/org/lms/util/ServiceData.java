@@ -4,8 +4,17 @@ import lombok.Data;
 
 @Data
 public class ServiceData<T> {
+    /**
+     * 返回码
+     */
     private String code;
+    /**
+     * 提示信息
+     */
     private String msg;
+    /**
+     * 数据
+     */
     private T data;
 
     public static <T> ServiceData<T> success() {

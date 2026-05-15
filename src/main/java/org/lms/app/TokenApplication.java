@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ *
+ */
 @Service
 public class TokenApplication {
 

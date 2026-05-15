@@ -1,11 +1,13 @@
 package org.lms.app;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.lms.converter.LibraryConverter;
+import org.lms.dto.PageDTO;
 import org.lms.dto.library.AddLibraryCmd;
+import org.lms.dto.library.LibraryDTO;
 import org.lms.dto.library.LibraryQuery;
 import org.lms.dto.library.UpdateLibraryCmd;
 import org.lms.entity.LibraryEntity;
@@ -45,29 +47,16 @@ public class LibraryApplication {
 
         String id = IdGenUtil.genLibraryId();
         // AddLibraryCmd 转换到 LibraryEntity
-        // TODO 后续可以考虑引入 mapstruct
-        LibraryEntity libraryEntity = getLibraryEntity(addLibraryCmd, id);
+        LibraryEntity libraryEntity = LibraryConverter.INSTANCE.addLibraryCmdToEntity(addLibraryCmd);
+        libraryEntity.setId(id);
+        libraryEntity.setCreateBy(RequestContextHolder.getUserId());
+        libraryEntity.setLastModifiedBy(RequestContextHolder.getUserId());
 
         libraryService.save(libraryEntity);
 
         log.info("Add library successful, name = {} and  id = {}", addLibraryCmd.getName(), id);
 
         return id;
-    }
-
-    private static LibraryEntity getLibraryEntity(AddLibraryCmd addLibraryCmd, String id) {
-        LibraryEntity libraryEntity = new LibraryEntity();
-        libraryEntity.setId(id);
-        libraryEntity.setName(addLibraryCmd.getName());
-        libraryEntity.setIsbn(addLibraryCmd.getIsbn());
-        libraryEntity.setAuthor(addLibraryCmd.getAuthor());
-        libraryEntity.setPublisher(addLibraryCmd.getPublisher());
-        libraryEntity.setPublishTime(addLibraryCmd.getPublishTime());
-        libraryEntity.setPrice(addLibraryCmd.getPrice());
-        libraryEntity.setCreateBy(RequestContextHolder.getUserId());
-        libraryEntity.setLastModifiedBy(RequestContextHolder.getUserId());
-
-        return libraryEntity;
     }
 
     public boolean removeLibrary(String libraryId) {
@@ -93,7 +82,7 @@ public class LibraryApplication {
 
     public boolean updateLibrary(UpdateLibraryCmd updateLibraryCmd) {
         // 根据 id 查询图书信息，不存在则提示图书不存在
-        LibraryEntity entity = getLibraryDetail(updateLibraryCmd.getId());
+        LibraryEntity entity = libraryService.getById(updateLibraryCmd.getId());
         if (null == entity) {
             log.info("The libraryId = {} does not exist.", updateLibraryCmd.getId());
             throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "the library does not exist");
@@ -130,7 +119,7 @@ public class LibraryApplication {
         return updated;
     }
 
-    public LibraryEntity getLibraryDetail(String libraryId) {
+    public LibraryDTO getLibraryDetail(String libraryId) {
         // 理论上可以加上缓存，提高接口性能。在修改的时候要同步删除缓存。避免缓存和数据不一致
         LibraryEntity entity = libraryService.getById(libraryId);
         if (null == entity) {
@@ -138,10 +127,12 @@ public class LibraryApplication {
             throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "the library does not exist");
         }
 
-        return entity;
+        LibraryDTO libraryDTO = LibraryConverter.INSTANCE.entityToDTO(entity);
+
+        return libraryDTO;
     }
 
-    public IPage<LibraryEntity> pageQuery(LibraryQuery query) {
+    public PageDTO<LibraryDTO> pageQuery(LibraryQuery query) {
         Page<LibraryEntity> page = new Page<>(query.getCurrent(), query.getPageSize());
         LambdaQueryWrapper<LibraryEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(StringUtils.isNotEmpty(query.getIsbn()), LibraryEntity::getIsbn, query.getIsbn())
@@ -151,8 +142,13 @@ public class LibraryApplication {
                 .like(StringUtils.isNotEmpty(query.getPublisher()), LibraryEntity::getPublisher, query.getPageSize())
                 .like(StringUtils.isNotEmpty(query.getCategoryName()), LibraryEntity::getCategoryName, query.getCategoryName());
 
-        // TODO 可以定义一个 DTO，用 mapstruct 转换一下再返回
-        return libraryService.page(page, queryWrapper);
+        Page<LibraryEntity> entityPage = libraryService.page(page, queryWrapper);
+        List<LibraryDTO> libraryDTOS = LibraryConverter.INSTANCE.entityListToDTO(entityPage.getRecords());
+
+        PageDTO<LibraryDTO> dtoPage = new PageDTO<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+        dtoPage.setRecords(libraryDTOS);
+
+        return dtoPage;
     }
 
 }

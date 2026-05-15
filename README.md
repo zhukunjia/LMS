@@ -9,7 +9,7 @@
 - 基于H2 数据库，无需外部依赖。提供了内存模式和文件模式配置
 
 ## 技术栈
-- 后端：`JDK1.8` `Spring boot` `caffeine` `lombok` `hutool` `swagger` `AOP` `mybatis-plus`
+- 后端：`JDK1.8` `Spring boot` `caffeine` `lombok` `hutool` `swagger` `AOP` `mybatis-plus` `mapstruct`
 - 数据库：`H2`
 - 其他：`Maven` `Git`
 

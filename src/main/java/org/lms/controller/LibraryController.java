@@ -1,14 +1,14 @@
 package org.lms.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.lms.annotation.Permission;
 import org.lms.app.LibraryApplication;
+import org.lms.dto.PageDTO;
 import org.lms.dto.library.AddLibraryCmd;
+import org.lms.dto.library.LibraryDTO;
 import org.lms.dto.library.LibraryQuery;
 import org.lms.dto.library.UpdateLibraryCmd;
-import org.lms.entity.LibraryEntity;
 import org.lms.util.Constant;
 import org.lms.util.ServiceData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,17 +64,17 @@ public class LibraryController {
     @GetMapping("/{libraryId}")
     @Operation(summary = "查询图书详情")
     @Permission(role = {Constant.MANAGE, Constant.USER})
-    public ServiceData<LibraryEntity> getLibraryDetail(@PathVariable("libraryId") String libraryId) {
-        LibraryEntity entity = libraryApplication.getLibraryDetail(libraryId);
+    public ServiceData<LibraryDTO> getLibraryDetail(@PathVariable("libraryId") String libraryId) {
+        LibraryDTO libraryDTO = libraryApplication.getLibraryDetail(libraryId);
 
-        return ServiceData.success(entity);
+        return ServiceData.success(libraryDTO);
     }
 
     @PostMapping("/pageQuery")
     @Operation(summary = "分页查询图书")
     @Permission(role = {Constant.MANAGE, Constant.USER})
-    public ServiceData<IPage<LibraryEntity>> pageQueryLibrary(@RequestBody LibraryQuery query) {
-        IPage<LibraryEntity> page = libraryApplication.pageQuery(query);
+    public ServiceData<PageDTO<LibraryDTO>> pageQueryLibrary(@RequestBody LibraryQuery query) {
+        PageDTO<LibraryDTO> page = libraryApplication.pageQuery(query);
 
         return ServiceData.success(page);
     }
