@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -28,6 +29,7 @@ public class LibraryApplication {
     LibraryService libraryService;
 
     public String addLibrary(AddLibraryCmd addLibraryCmd) {
+        // TODO 可以考虑根据 isbn 查询一下是否存在，如果不存在才保存；存在了则提示isbn 已经存在
         // AddLibraryCmd 转换到 LibraryEntity
         // TODO 后续可以考虑引入 mapstruct
         String id = IdGenUtil.genLibraryId();
@@ -44,11 +46,18 @@ public class LibraryApplication {
 
         libraryService.save(libraryEntity);
 
+        log.info("Add library successful, name = {} and  id = {}", addLibraryCmd.getName(), id);
+
         return id;
     }
 
     public boolean removeLibrary(String libraryId) {
-        return libraryService.removeById(libraryId);
+        boolean removed = libraryService.removeById(libraryId);
+        if(removed) {
+            log.info("remove library = {} successful by {}", libraryId, RequestContextHolder.getUserId());
+        }
+
+        return removed;
     }
 
     @Transactional
@@ -56,7 +65,11 @@ public class LibraryApplication {
         if(libraryIds == null || libraryIds.isEmpty()) {
             return true;
         }
-        return libraryService.removeBatchByIds(libraryIds);
+        boolean removed = libraryService.removeBatchByIds(libraryIds);
+        if(removed) {
+            log.info("remove library = {} successful by {}", libraryIds, RequestContextHolder.getUserId());
+        }
+        return removed;
     }
 
     public boolean updateLibrary(UpdateLibraryCmd updateLibraryCmd) {
@@ -66,6 +79,8 @@ public class LibraryApplication {
             throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "the library does not exist");
         }
 
+        // TODO 如果传进来的isbn 不一样，需要再根据 isbn 查一下数据库，查到数据则表示isbn 已经存在，抛异常提示isbn 已经存在
+
         entity.setName(updateLibraryCmd.getName());
         entity.setIsbn(updateLibraryCmd.getIsbn());
         entity.setAuthor(updateLibraryCmd.getAuthor());
@@ -73,9 +88,13 @@ public class LibraryApplication {
         entity.setPublishTime(updateLibraryCmd.getPublishTime());
         entity.setPrice(updateLibraryCmd.getPrice());
         entity.setLastModifiedBy(RequestContextHolder.getUserId());
+        entity.setLastModifiedTime(new Date());
 
-        // 如果想把字段生成成null，可以使用 LambdaUpdateWrapper，使用 .set(字段, null)
-        return libraryService.updateById(entity);
+        boolean updated = libraryService.updateById(entity);
+        if(updated) {
+            log.info("update library = {} successful by {}", updateLibraryCmd.getId(), RequestContextHolder.getUserId());
+        }
+        return updated;
     }
 
     public LibraryEntity getLibraryDetail(String libraryId) {
@@ -98,6 +117,7 @@ public class LibraryApplication {
                 .like(StringUtils.isNotEmpty(query.getPublisher()), LibraryEntity::getPublisher, query.getPageSize())
                 .like(StringUtils.isNotEmpty(query.getCategoryName()), LibraryEntity::getCategoryName, query.getCategoryName());
 
+        // TODO 可以定义一个 DTO，用 mapstruct 转换一下再返回
         return libraryService.page(page, queryWrapper);
     }
 

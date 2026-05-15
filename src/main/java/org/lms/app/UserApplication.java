@@ -106,7 +106,10 @@ public class UserApplication {
     }
 
     public void logout() {
-        tokenApplication.removeToken(RequestContextHolder.getUserId());
+        String userId = RequestContextHolder.getUserId();
+        log.info("the userId = {} logout.", userId);
+
+        tokenApplication.removeToken(userId);
     }
 
 }
