@@ -11,4 +11,6 @@ public class LibraryQuery {
     private String author;
     private String publisher;
     private String categoryName;
+    // 图书状态，下架&正常
+    private Integer status;
 }

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -29,10 +30,32 @@ public class LibraryApplication {
     LibraryService libraryService;
 
     public String addLibrary(AddLibraryCmd addLibraryCmd) {
-        // TODO 可以考虑根据 isbn 查询一下是否存在，如果不存在才保存；存在了则提示isbn 已经存在
+        // 虽然isbn 已经加了唯一索引，但是这里还是需要校验一下isbn 是否被使用
+        LambdaQueryWrapper<LibraryEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(LibraryEntity::getId, LibraryEntity::getIsbn)
+                .eq(LibraryEntity::getIsbn, addLibraryCmd.getIsbn())
+                .last(" limit 1");
+
+        LibraryEntity existEntity = libraryService.getOne(queryWrapper);
+        if (null != existEntity) {
+            log.info("failed to add library, isbn = {} is exist", addLibraryCmd.getIsbn());
+
+            throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "isbn is exist");
+        }
+
+        String id = IdGenUtil.genLibraryId();
         // AddLibraryCmd 转换到 LibraryEntity
         // TODO 后续可以考虑引入 mapstruct
-        String id = IdGenUtil.genLibraryId();
+        LibraryEntity libraryEntity = getLibraryEntity(addLibraryCmd, id);
+
+        libraryService.save(libraryEntity);
+
+        log.info("Add library successful, name = {} and  id = {}", addLibraryCmd.getName(), id);
+
+        return id;
+    }
+
+    private static LibraryEntity getLibraryEntity(AddLibraryCmd addLibraryCmd, String id) {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(id);
         libraryEntity.setName(addLibraryCmd.getName());
@@ -44,16 +67,12 @@ public class LibraryApplication {
         libraryEntity.setCreateBy(RequestContextHolder.getUserId());
         libraryEntity.setLastModifiedBy(RequestContextHolder.getUserId());
 
-        libraryService.save(libraryEntity);
-
-        log.info("Add library successful, name = {} and  id = {}", addLibraryCmd.getName(), id);
-
-        return id;
+        return libraryEntity;
     }
 
     public boolean removeLibrary(String libraryId) {
         boolean removed = libraryService.removeById(libraryId);
-        if(removed) {
+        if (removed) {
             log.info("remove library = {} successful by {}", libraryId, RequestContextHolder.getUserId());
         }
 
@@ -62,24 +81,38 @@ public class LibraryApplication {
 
     @Transactional
     public boolean batchRemoveLibrary(List<String> libraryIds) {
-        if(libraryIds == null || libraryIds.isEmpty()) {
+        if (libraryIds == null || libraryIds.isEmpty()) {
             return true;
         }
         boolean removed = libraryService.removeBatchByIds(libraryIds);
-        if(removed) {
+        if (removed) {
             log.info("remove library = {} successful by {}", libraryIds, RequestContextHolder.getUserId());
         }
         return removed;
     }
 
     public boolean updateLibrary(UpdateLibraryCmd updateLibraryCmd) {
+        // 根据 id 查询图书信息，不存在则提示图书不存在
         LibraryEntity entity = getLibraryDetail(updateLibraryCmd.getId());
-        if(null == entity) {
+        if (null == entity) {
             log.info("The libraryId = {} does not exist.", updateLibraryCmd.getId());
             throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "the library does not exist");
         }
 
-        // TODO 如果传进来的isbn 不一样，需要再根据 isbn 查一下数据库，查到数据则表示isbn 已经存在，抛异常提示isbn 已经存在
+        // 如果修改的是isbn，需要检验一下这个isbn 是否已经被使用了
+        if (StringUtils.isNotEmpty(updateLibraryCmd.getIsbn()) && !StringUtils.equals(updateLibraryCmd.getIsbn(), entity.getIsbn())) {
+            LambdaQueryWrapper<LibraryEntity> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.select(LibraryEntity::getId, LibraryEntity::getIsbn)
+                    .eq(LibraryEntity::getIsbn, updateLibraryCmd.getIsbn())
+                    .last(" limit 1");
+
+            LibraryEntity existEntity = libraryService.getOne(queryWrapper);
+            if (null != existEntity) {
+                log.info("failed to update library of id ={}, the isbn = {} is exist", updateLibraryCmd.getId(), updateLibraryCmd.getIsbn());
+
+                throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "isbn is exist");
+            }
+        }
 
         entity.setName(updateLibraryCmd.getName());
         entity.setIsbn(updateLibraryCmd.getIsbn());
@@ -91,19 +124,19 @@ public class LibraryApplication {
         entity.setLastModifiedTime(new Date());
 
         boolean updated = libraryService.updateById(entity);
-        if(updated) {
+        if (updated) {
             log.info("update library = {} successful by {}", updateLibraryCmd.getId(), RequestContextHolder.getUserId());
         }
         return updated;
     }
 
     public LibraryEntity getLibraryDetail(String libraryId) {
+        // 理论上可以加上缓存，提高接口性能。在修改的时候要同步删除缓存。避免缓存和数据不一致
         LibraryEntity entity = libraryService.getById(libraryId);
-        if(null == entity) {
+        if (null == entity) {
             log.info("The libraryId = {} does not exist.", libraryId);
             throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "the library does not exist");
         }
-        // 理论上可以加上缓存，提高接口性能。在修改的时候要同步删除缓存。避免缓存和数据不一致
 
         return entity;
     }
@@ -112,6 +145,7 @@ public class LibraryApplication {
         Page<LibraryEntity> page = new Page<>(query.getCurrent(), query.getPageSize());
         LambdaQueryWrapper<LibraryEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(StringUtils.isNotEmpty(query.getIsbn()), LibraryEntity::getIsbn, query.getIsbn())
+                .eq(Objects.nonNull(query.getStatus()), LibraryEntity::getStatus, query.getStatus())
                 .like(StringUtils.isNotEmpty(query.getName()), LibraryEntity::getName, query.getName())
                 .like(StringUtils.isNotEmpty(query.getAuthor()), LibraryEntity::getAuthor, query.getAuthor())
                 .like(StringUtils.isNotEmpty(query.getPublisher()), LibraryEntity::getPublisher, query.getPageSize())

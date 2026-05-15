@@ -31,7 +31,17 @@ public class UserApplication {
     private TokenApplication tokenApplication;
 
     public String addUser(AddUserCmd addUserCmd) {
-        // TODO 最好校验用户名是否已经存在。虽然sql 是已经限制了唯一索引
+        // 根据 userName 查询用户表，如果存在，返回错误。不存在则继续
+        LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(UserEntity::getId, UserEntity::getUserName)
+                .eq(UserEntity::getUserName, addUserCmd.getUserName())
+                .last(" limit 1");
+        UserEntity existEntity = userService.getOne(queryWrapper);
+        if (null != existEntity) {
+            log.info("failed to add user. the userName = {} is exist", addUserCmd.getUserName());
+
+            throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "userName is exist");
+        }
 
         String id = IdGenUtil.genUserId();
         // 密码需要加密存储，不可逆加密
