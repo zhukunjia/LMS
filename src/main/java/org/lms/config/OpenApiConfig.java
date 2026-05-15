@@ -12,8 +12,8 @@ public class OpenApiConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("LMS API 文档")
-                        .description("Spring Boot 2.7.18 + springdoc-openapi")
+                        .title("图书管理系统(LMS) API 文档")
+                        .description("Spring Boot 2.7.18 + springdoc-openapi + mybatis-plus")
                         .version("1.0.0"));
     }
 }
