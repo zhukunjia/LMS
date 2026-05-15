@@ -25,12 +25,14 @@
 git clone https://github.com/zhukunjia/LMS.git
 cd LMS
 ```
-### 下载依赖
+### 2. 下载依赖
 ```bash
 mvn clean package -D maven.test.skip=true
 ```
+### 3. 接口使用
+用户和接口信息请参考[接口文档](./docs/接口文档.md)
 
-### 注意事项
+### 4. 注意事项
 - 请求头有两个，`x-lms-userId` 和 `x-lms-token`。除了登录接口之外，其他接口一律需要传请求头
 - [表设计](./src/main/resources/db/schema-h2.sql), [初始化数据](./src/main/resources/db/data-h2.sql)
 - 第一次启动，最好配置`spring.sql.init.mode=always`，之后再配置`spring.sql.init.mode=embedded`。`mode=embedded`时，配置`file`模式，不会执行sql初始化脚本；`file`模式如果要支持初始化脚本，需要配置`mode=always`
