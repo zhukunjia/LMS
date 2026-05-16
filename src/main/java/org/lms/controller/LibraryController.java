@@ -79,4 +79,22 @@ public class LibraryController {
         return ServiceData.success(page);
     }
 
+    @PostMapping("/{libraryId}/online")
+    @Operation(summary = "上架图书")
+    @Permission(role = {Constant.MANAGE})
+    public ServiceData<Boolean> online(@PathVariable("libraryId") String libraryId) {
+        boolean updateStatus = libraryApplication.onLineLibrary(libraryId);
+
+        return ServiceData.success(updateStatus);
+    }
+
+    @PostMapping("/{libraryId}/offline")
+    @Operation(summary = "下架图书")
+    @Permission(role = {Constant.MANAGE})
+    public ServiceData<Boolean> offline(@PathVariable("libraryId") String libraryId) {
+        boolean updateStatus = libraryApplication.offLineLibrary(libraryId);
+
+        return ServiceData.success(updateStatus);
+    }
+
 }

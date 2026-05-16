@@ -7,5 +7,7 @@ import org.lms.service.LibraryService;
 import org.springframework.stereotype.Service;
 
 @Service
-public class LibraryrServiceImpl extends ServiceImpl<LibraryMapper, LibraryEntity> implements LibraryService {
+public class LibraryServiceImpl extends ServiceImpl<LibraryMapper, LibraryEntity> implements LibraryService {
+
+
 }

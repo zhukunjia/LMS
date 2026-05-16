@@ -2,15 +2,14 @@ package org.lms.app;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- *
- */
 @Service
+@Slf4j
 public class TokenApplication {
 
     private final Cache<String, String> tokenCache = Caffeine.newBuilder()

@@ -24,7 +24,7 @@ public class PageDTO<T> {
         this.size = size;
     }
 
-    public PageDTO(long size, long current, long total) {
+    public PageDTO(long current, long size, long total) {
         this.size = size;
         this.current = current;
         this.total = total;

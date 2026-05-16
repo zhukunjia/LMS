@@ -6,9 +6,9 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.lms.dto.user.AddUserCmd;
-import org.lms.dto.user.LoginDTO;
-import org.lms.dto.user.SsoInfo;
+import org.lms.converter.UserConverter;
+import org.lms.dto.PageDTO;
+import org.lms.dto.user.*;
 import org.lms.entity.UserEntity;
 import org.lms.exception.LmsException;
 import org.lms.service.UserService;
@@ -18,6 +18,7 @@ import org.lms.util.RetCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -63,8 +64,13 @@ public class UserApplication {
         throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "add user failed");
     }
 
-    public UserEntity getUserById(String id) {
-        return userService.getById(id);
+    public UserDTO getUserById() {
+        // userId 从请求头拿，避免从url 路径上传进来，会存在越权的风险
+        String userId = RequestContextHolder.getUserId();
+
+        UserEntity entity = userService.getById(userId);
+
+        return UserConverter.INSTANCE.entityToDTO(entity);
     }
 
     public UserEntity getUserByUserName(String userName) {
@@ -75,12 +81,18 @@ public class UserApplication {
         return userService.getOne(queryWrapper);
     }
 
-    public IPage<UserEntity> pageQueryUser() {
-        IPage<UserEntity> page = new Page<>(1, 10);
+    public PageDTO<UserDTO> pageQueryUser(UserQuery query) {
+        IPage<UserEntity> page = new Page<>(query.getCurrent(), query.getPageSize());
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StringUtils.isNotEmpty(query.getUserName()), UserEntity::getUserName, query.getUserName());
 
+        IPage<UserEntity> entityIPage = userService.page(page, queryWrapper);
+        List<UserDTO> userDTOS = UserConverter.INSTANCE.entityListToDTO(entityIPage.getRecords());
 
-        return userService.page(page, queryWrapper);
+        PageDTO<UserDTO> pageDTO = new PageDTO<>(entityIPage.getCurrent(), entityIPage.getSize(), entityIPage.getTotal());
+        pageDTO.setRecords(userDTOS);
+
+        return pageDTO;
     }
 
     public SsoInfo login(LoginDTO loginDTO) {

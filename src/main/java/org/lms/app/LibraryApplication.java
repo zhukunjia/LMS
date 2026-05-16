@@ -1,6 +1,7 @@
 package org.lms.app;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -13,6 +14,7 @@ import org.lms.dto.library.UpdateLibraryCmd;
 import org.lms.entity.LibraryEntity;
 import org.lms.exception.LmsException;
 import org.lms.service.LibraryService;
+import org.lms.util.Constant;
 import org.lms.util.IdGenUtil;
 import org.lms.util.RequestContextHolder;
 import org.lms.util.RetCode;
@@ -139,7 +141,7 @@ public class LibraryApplication {
                 .eq(Objects.nonNull(query.getStatus()), LibraryEntity::getStatus, query.getStatus())
                 .like(StringUtils.isNotEmpty(query.getName()), LibraryEntity::getName, query.getName())
                 .like(StringUtils.isNotEmpty(query.getAuthor()), LibraryEntity::getAuthor, query.getAuthor())
-                .like(StringUtils.isNotEmpty(query.getPublisher()), LibraryEntity::getPublisher, query.getPageSize())
+                .like(StringUtils.isNotEmpty(query.getPublisher()), LibraryEntity::getPublisher, query.getPublisher())
                 .like(StringUtils.isNotEmpty(query.getCategoryName()), LibraryEntity::getCategoryName, query.getCategoryName());
 
         Page<LibraryEntity> entityPage = libraryService.page(page, queryWrapper);
@@ -149,6 +151,33 @@ public class LibraryApplication {
         dtoPage.setRecords(libraryDTOS);
 
         return dtoPage;
+    }
+
+    public boolean offLineLibrary(String libraryId) {
+        return updateLibraryStatus(libraryId, Constant.OFFLINE);
+    }
+
+    public boolean onLineLibrary(String libraryId) {
+        return updateLibraryStatus(libraryId, Constant.ONLINE);
+    }
+
+    private boolean updateLibraryStatus(String libraryId, Integer status) {
+        LibraryEntity entity = libraryService.getById(libraryId);
+        if(null == entity) {
+            log.info("update library status failed,libraryId = {} does not exist", libraryId);
+
+            throw new LmsException(RetCode.BUSINESS_ERROR.getCode(), "the library does not exist");
+        }
+
+        LambdaUpdateWrapper<LibraryEntity> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(LibraryEntity::getId, libraryId)
+                .set(LibraryEntity::getStatus, status)
+                .set(LibraryEntity::getLastModifiedBy, RequestContextHolder.getUserId())
+                .set(LibraryEntity::getLastModifiedTime, new Date());
+
+        boolean update = libraryService.update(updateWrapper);
+
+        return update;
     }
 
 }
